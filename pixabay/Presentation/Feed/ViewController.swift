@@ -125,11 +125,14 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: UITableViewDelegate {
-    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let selectedOriginalImage = normalImages[indexPath.row]
+        let selectedGraffitiImage = graffitiImages[indexPath.row] 
+        
+        let detailVC = ImageViewerVC(selectedOriginalImage: selectedOriginalImage, selectedGraffitiImage: selectedGraffitiImage)
+        navigationController?.pushViewController(detailVC, animated: true)
+    }
 }
-
-
-
 
 extension ViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -145,7 +148,7 @@ extension ViewController: UITableViewDataSource {
         if normalImageIndex < normalImages.count {
             let normalImage = normalImages[normalImageIndex]
             cell.previewImageView.sd_setImage(with: URL(string: normalImage.previewURL), placeholderImage: UIImage(named: "placeholder"))
-            cell.tagsImageLabel.text = normalImage.tags
+            cell.tagsImageLabel.text = getTags(tags: normalImage.tags)
         } else {
             cell.previewImageView.image = nil
             cell.tagsImageLabel.text = nil
@@ -154,7 +157,7 @@ extension ViewController: UITableViewDataSource {
         if graffitiImageIndex < graffitiImages.count {
             let graffitiImage = graffitiImages[graffitiImageIndex]
             cell.previewImageViewSecond.sd_setImage(with: URL(string: graffitiImage.previewURL), placeholderImage: UIImage(named: "placeholder"))
-            cell.tagsImageLabelSecond.text = graffitiImage.tags
+            cell.tagsImageLabelSecond.text = getTags(tags: graffitiImage.tags)
         } else {
             cell.previewImageViewSecond.image = nil
             cell.tagsImageLabelSecond.text = nil

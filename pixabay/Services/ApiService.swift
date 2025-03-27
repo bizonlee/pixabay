@@ -38,6 +38,8 @@ class ApiService: ApiServiceProtocol {
             URLQueryItem(name: "safesearch", value: "true"),
             URLQueryItem(name: "per_page", value: "\(perPage)")
         ]
+        
+        print(queryEncoded)
 
         guard let url = components.url else {
             completion(.failure(.invalidURL))
