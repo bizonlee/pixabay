@@ -1,17 +1,25 @@
 import UIKit
 import SDWebImage
 
-class ViewController: UIViewController {
-    
+protocol FeedVCProtocol: AnyObject {
+    func updateImages(normalImages: [PixabayImage], graffitiImages: [PixabayImage])
+    func displayError(_ error: Error)
+}
+
+import UIKit
+import SDWebImage
+
+class FeedVC: UIViewController, FeedVCProtocol {
     private let pixabayService = ApiService()
-    private var images = [PixabayImage]()
     private var normalImages = [PixabayImage]()
     private var graffitiImages = [PixabayImage]()
+    private let presenter = FeedPresenter()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Pixabay"
         view.backgroundColor = .white
+        presenter.view = self
         setupViews()
         setupConstraints()
     }
@@ -55,15 +63,12 @@ class ViewController: UIViewController {
             searchLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             searchLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             searchLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            
             searchTextField.topAnchor.constraint(equalTo: searchLabel.bottomAnchor, constant: 10),
             searchTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             searchTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            
             searchButton.topAnchor.constraint(equalTo: searchTextField.bottomAnchor, constant: 10),
             searchButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             searchButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            
             tableView.topAnchor.constraint(equalTo: searchButton.bottomAnchor, constant: 20),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -78,75 +83,33 @@ class ViewController: UIViewController {
         view.addSubview(tableView)
     }
     
-    
     @objc private func searchButtonTapped() {
-            guard let query = searchTextField.text, !query.isEmpty else {
-                print("Введите запрос для поиска")
-                return
-            }
-            
-            let dispatchGroup = DispatchGroup()
-            
-            normalImages.removeAll()
-            graffitiImages.removeAll()
-            
-            dispatchGroup.enter()
-            pixabayService.searchImages(query: query) { [weak self] result in
-                switch result {
-                case .success(let images):
-                    self?.normalImages = images
-                    print("Найдено изображений: \(images.count)")
-                case .failure(let error):
-                    print("Ошибка при поиске: \(error)")
-                }
-                dispatchGroup.leave()
-            }
-            
-            dispatchGroup.enter()
-            let graffitiQuery =  query + " graffiti"
-            pixabayService.searchImages(query: graffitiQuery) { [weak self] result in
-                switch result {
-                case .success(let images):
-                    self?.graffitiImages = images
-                    print("Найдено изображений graffiti: \(images.count)")
-                case .failure(let error):
-                    print("Ошибка при поиске graffiti: \(error)")
-                }
-                dispatchGroup.leave()
-            }
-            
-            dispatchGroup.notify(queue: .main) {
-                let minCount = min(self.normalImages.count, self.graffitiImages.count)
-                self.images = Array(self.normalImages.prefix(minCount)) + Array(self.graffitiImages.prefix(minCount))
-                
-                self.tableView.reloadData()
-            }
-        }
-}
-
-extension ViewController: UITableViewDelegate {
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let selectedOriginalImage = normalImages[indexPath.row]
-        let selectedGraffitiImage = graffitiImages[indexPath.row] 
-        
-        let detailVC = ImageViewerVC(selectedOriginalImage: selectedOriginalImage, selectedGraffitiImage: selectedGraffitiImage)
-        navigationController?.pushViewController(detailVC, animated: true)
+        guard let query = searchTextField.text else { return }
+        presenter.searchButtonTapped(query: query)
+    }
+    
+    func updateImages(normalImages: [PixabayImage], graffitiImages: [PixabayImage]) {
+        self.normalImages = normalImages
+        self.graffitiImages = graffitiImages
+        let minCount = min(normalImages.count, graffitiImages.count)
+        tableView.reloadData()
+    }
+    
+    func displayError(_ error: Error) {
+        print(error.localizedDescription)
     }
 }
 
-extension ViewController: UITableViewDataSource {
+extension FeedVC: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return images.count
+        return min(normalImages.count, graffitiImages.count)
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ImagesCell", for: indexPath) as! ImagesCell
         
-        let normalImageIndex = indexPath.row
-        let graffitiImageIndex = indexPath.row
-        
-        if normalImageIndex < normalImages.count {
-            let normalImage = normalImages[normalImageIndex]
+        if indexPath.row < normalImages.count {
+            let normalImage = normalImages[indexPath.row]
             cell.previewImageView.sd_setImage(with: URL(string: normalImage.previewURL), placeholderImage: UIImage(named: "placeholder"))
             cell.tagsImageLabel.text = getTags(tags: normalImage.tags)
         } else {
@@ -154,8 +117,8 @@ extension ViewController: UITableViewDataSource {
             cell.tagsImageLabel.text = nil
         }
         
-        if graffitiImageIndex < graffitiImages.count {
-            let graffitiImage = graffitiImages[graffitiImageIndex]
+        if indexPath.row < graffitiImages.count {
+            let graffitiImage = graffitiImages[indexPath.row]
             cell.previewImageViewSecond.sd_setImage(with: URL(string: graffitiImage.previewURL), placeholderImage: UIImage(named: "placeholder"))
             cell.tagsImageLabelSecond.text = getTags(tags: graffitiImage.tags)
         } else {
@@ -164,5 +127,15 @@ extension ViewController: UITableViewDataSource {
         }
         
         return cell
+    }
+}
+
+extension FeedVC: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let selectedOriginalImage = normalImages[indexPath.row]
+        let selectedGraffitiImage = graffitiImages[indexPath.row]
+        
+        let detailVC = ImageViewerVC(selectedOriginalImage: selectedOriginalImage, selectedGraffitiImage: selectedGraffitiImage)
+        navigationController?.pushViewController(detailVC, animated: true)
     }
 }
