@@ -2,27 +2,23 @@ import UIKit
 import SDWebImage
 
 protocol FeedVCProtocol: AnyObject {
-    func updateImages(normalImages: [PixabayImage], graffitiImages: [PixabayImage])
+    func updateNormalImages(_ images: [PixabayImage])
+    func updateGraffitiImages(_ images: [PixabayImage])
     func displayError(_ error: Error)
 }
 
-import UIKit
-import SDWebImage
-
 class FeedVC: UIViewController, FeedVCProtocol {
-    private let pixabayService = ApiService()
+    private let pixabayService: ApiServiceProtocol
+    private let presenter: FeedPresenter
     private var normalImages = [PixabayImage]()
     private var graffitiImages = [PixabayImage]()
-    private let presenter = FeedPresenter()
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        title = "Pixabay"
-        view.backgroundColor = .white
-        presenter.view = self
-        setupViews()
-        setupConstraints()
-    }
+    private var currentPage = 1
+    private let pageSize = 10
+    private var isLoading = false
+    private var isPullToRefresh = false
+    private var hasMoreNormalImages = true
+    private var hasMoreGraffitiImages = true
+    private var query = ""
     
     private lazy var searchLabel: UILabel = {
         let label = UILabel()
@@ -58,6 +54,29 @@ class FeedVC: UIViewController, FeedVCProtocol {
         return tableView
     }()
     
+    private let refreshControl = UIRefreshControl()
+    private let activityIndicator = UIActivityIndicatorView(style: .large)
+    
+    init(pixabayService: ApiServiceProtocol) {
+        self.pixabayService = pixabayService
+        self.presenter = FeedPresenter(pixabayService: pixabayService)
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    @available(*, unavailable)
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "Pixabay"
+        view.backgroundColor = .white
+        presenter.view = self
+        setupViews()
+        setupConstraints()
+    }
+    
     private func setupConstraints() {
         NSLayoutConstraint.activate([
             searchLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
@@ -81,23 +100,80 @@ class FeedVC: UIViewController, FeedVCProtocol {
         view.addSubview(searchTextField)
         view.addSubview(searchButton)
         view.addSubview(tableView)
+        refreshControl.addTarget(self, action: #selector(refreshFiles(_:)), for: .valueChanged)
+        tableView.refreshControl = refreshControl
+        activityIndicator.center = view.center
+        view.addSubview(activityIndicator)
+    }
+    
+    private func showLoadingIndicator() {
+        activityIndicator.startAnimating()
+        view.isUserInteractionEnabled = false
+    }
+    
+    private func hideLoadingIndicator() {
+        activityIndicator.stopAnimating()
+        view.isUserInteractionEnabled = true
     }
     
     @objc private func searchButtonTapped() {
-        guard let query = searchTextField.text else { return }
+        guard let query = searchTextField.text, !query.isEmpty else {
+            print("Введите запрос для поиска")
+            return
+        }
+        self.query = query
+        currentPage = 1
+        isPullToRefresh = false
+        hasMoreNormalImages = true
+        hasMoreGraffitiImages = true
+        presenter.searchButtonTapped(query: query)
+        showLoadingIndicator()
+        print("Инициирован поиск с запросом: \(query)")
+    }
+    
+    @objc private func refreshFiles(_ sender: Any) {
+        isPullToRefresh = true
+        currentPage = 1
+        hasMoreNormalImages = true
+        hasMoreGraffitiImages = true
         presenter.searchButtonTapped(query: query)
     }
     
-    func updateImages(normalImages: [PixabayImage], graffitiImages: [PixabayImage]) {
-        self.normalImages = normalImages
-        self.graffitiImages = graffitiImages
-        let minCount = min(normalImages.count, graffitiImages.count)
+    func updateNormalImages(_ images: [PixabayImage]) {
+        normalImages = images
+        if isPullToRefresh {
+            graffitiImages.removeAll()
+        }
         tableView.reloadData()
+        refreshControl.endRefreshing()
+        hideLoadingIndicator()
+        isLoading = false
+        print("Обновление нормальных изображений с \(images.count) элементами")
+    }
+    
+    func updateGraffitiImages(_ images: [PixabayImage]) {
+        graffitiImages = images
+        tableView.reloadData()
+        refreshControl.endRefreshing()
+        hideLoadingIndicator()
+        isLoading = false
+        print("Обновление изображений с graffiti с \(images.count) элементами")
     }
     
     func displayError(_ error: Error) {
-        print(error.localizedDescription)
+        let alertController = UIAlertController(title: "Ошибка", message: error.localizedDescription, preferredStyle: .alert)
+        let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+        alertController.addAction(okAction)
+        present(alertController, animated: true, completion: nil)
+        
+        refreshControl.endRefreshing()
+        hideLoadingIndicator()
+        isLoading = false
+        print("Ошибка: \(error.localizedDescription)")
     }
+}
+
+extension FeedVC: UITableViewDelegate {
 }
 
 extension FeedVC: UITableViewDataSource {
@@ -128,14 +204,14 @@ extension FeedVC: UITableViewDataSource {
         
         return cell
     }
-}
-
-extension FeedVC: UITableViewDelegate {
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let selectedOriginalImage = normalImages[indexPath.row]
-        let selectedGraffitiImage = graffitiImages[indexPath.row]
-        
-        let detailVC = ImageViewerVC(selectedOriginalImage: selectedOriginalImage, selectedGraffitiImage: selectedGraffitiImage)
-        navigationController?.pushViewController(detailVC, animated: true)
+    
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        let totalRows = tableView.numberOfRows(inSection: 0)
+        if indexPath.row == totalRows - 1 && hasMoreNormalImages && hasMoreGraffitiImages && !isLoading {
+            isLoading = true
+            currentPage += 1
+            presenter.loadMoreNormalImages(query: query, page: currentPage)
+            presenter.loadMoreGraffitiImages(query: query, page: currentPage)
+        }
     }
 }
