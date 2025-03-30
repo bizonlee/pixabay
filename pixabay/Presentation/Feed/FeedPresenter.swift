@@ -9,78 +9,47 @@ import Foundation
 
 protocol FeedPresenterProtocol {
     func searchButtonTapped(query: String)
-    func loadMoreNormalImages(query: String, page: Int)
-    func loadMoreGraffitiImages(query: String, page: Int)
+    func loadMoreImages(query: String, page: Int, type: Int)
 }
 
 class FeedPresenter: FeedPresenterProtocol {
     weak var view: FeedVCProtocol?
     private let pixabayService: ApiServiceProtocol
-    private var normalImages = [PixabayImage]()
-    private var graffitiImages = [PixabayImage]()
+    private var images = [[PixabayImage]]()
     private var currentPage = 1
-    private var hasMoreNormalImages = true
-    private var hasMoreGraffitiImages = true
+    private var hasMoreImages = [true, true]
     private let pageSize = 10
-    
+
     init(pixabayService: ApiServiceProtocol) {
         self.pixabayService = pixabayService
     }
-    
+
     func searchButtonTapped(query: String) {
         guard !query.isEmpty else {
             view?.displayError(NSError(domain: "EmptyQuery", code: 1, userInfo: [NSLocalizedDescriptionKey: "Введите запрос для поиска"]))
             return
         }
-        
-        normalImages.removeAll()
-        graffitiImages.removeAll()
+        images = [[], []]
         currentPage = 1
-        hasMoreNormalImages = true
-        hasMoreGraffitiImages = true
-        
-        loadMoreNormalImages(query: query, page: currentPage)
-        loadMoreGraffitiImages(query: query, page: currentPage)
+        hasMoreImages = [true, true]
+        loadMoreImages(query: query, page: currentPage, type: 0)
+        loadMoreImages(query: query, page: currentPage, type: 1)
     }
-    
-    func loadMoreNormalImages(query: String, page: Int) {
-        guard hasMoreNormalImages else { return }
-        
-        pixabayService.searchImages(query: query, page: page, perPage: pageSize) { [weak self] result in
+
+    func loadMoreImages(query: String, page: Int, type: Int) {
+        guard hasMoreImages[type] else { return }
+        let finalQuery = type == 1 ? query + " graffiti" : query
+        pixabayService.searchImages(query: finalQuery, page: page, perPage: pageSize) { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .success(let images):
-                self.normalImages.append(contentsOf: images)
-                print("Найдено изображений: \(images.count)")
+                self.images[type].append(contentsOf: images)
+                print("Найдено изображений \(type == 1 ? "graffiti" : ""): \(images.count)")
                 if images.count < pageSize {
-                    self.hasMoreNormalImages = false
+                    self.hasMoreImages[type] = false
                 }
                 DispatchQueue.main.async {
-                    self.view?.updateNormalImages(self.normalImages)
-                }
-            case .failure(let error):
-                DispatchQueue.main.async {
-                    self.view?.displayError(error)
-                }
-            }
-        }
-    }
-    
-    func loadMoreGraffitiImages(query: String, page: Int) {
-        guard hasMoreGraffitiImages else { return }
-        
-        let graffitiQuery = query + " graffiti"
-        pixabayService.searchImages(query: graffitiQuery, page: page, perPage: pageSize) { [weak self] result in
-            guard let self = self else { return }
-            switch result {
-            case .success(let images):
-                self.graffitiImages.append(contentsOf: images)
-                print("Найдено изображений graffiti: \(images.count)")
-                if images.count < pageSize {
-                    self.hasMoreGraffitiImages = false
-                }
-                DispatchQueue.main.async {
-                    self.view?.updateGraffitiImages(self.graffitiImages)
+                    self.view?.updateImages(self.images)
                 }
             case .failure(let error):
                 DispatchQueue.main.async {
