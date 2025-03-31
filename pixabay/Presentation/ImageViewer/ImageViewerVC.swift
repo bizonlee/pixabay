@@ -9,71 +9,114 @@ import UIKit
 import SDWebImage
 
 class ImageViewerVC: UIViewController {
+    var selectedImage: [PixabayImage]
+    private var imageView: UIImageView!
+    private var currentIndex = 0
+    private var loadingImageView: UIImageView!
     
-    var selectedOriginalImage: PixabayImage
-    var selectedGraffitiImage: PixabayImage
-    
-    private var scrollView: UIScrollView!
-    private var imageView1: UIImageView!
-    private var imageView2: UIImageView!
-    
-    init(selectedOriginalImage: PixabayImage, selectedGraffitiImage: PixabayImage) {
-        self.selectedOriginalImage = selectedOriginalImage
-        self.selectedGraffitiImage = selectedGraffitiImage
+    init(electedImage: [PixabayImage]) {
+        self.selectedImage = selectedImage
         super.init(nibName: nil, bundle: nil)
     }
     
+    @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         view.backgroundColor = .white
-        setupScrollView()
-        setupImageViews()
+        setupImageView()
+        setupLoadingImageView()
+        setupGestures()
         loadImages()
     }
     
-    private func setupScrollView() {
-        scrollView = UIScrollView(frame: view.bounds)
-        scrollView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        scrollView.delegate = self
-        scrollView.isPagingEnabled = true
-        scrollView.showsHorizontalScrollIndicator = false
-        scrollView.contentSize = CGSize(width: view.bounds.width * 2, height: view.bounds.height)
-        view.addSubview(scrollView)
+    private func setupImageView() {
+        imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFit
+        imageView.clipsToBounds = true
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(imageView)
+        
+        NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(equalTo: view.topAnchor),
+            imageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            imageView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
     }
     
-    private func setupImageViews() {
-        imageView1 = UIImageView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: view.bounds.height))
-        imageView1.contentMode = .scaleAspectFit
-        imageView1.clipsToBounds = true
-        scrollView.addSubview(imageView1)
+    private func setupLoadingImageView() {
+        loadingImageView = UIImageView(image: UIImage(named: "loading_indicator"))
+        loadingImageView.contentMode = .scaleAspectFit
+        loadingImageView.center = view.center
+        loadingImageView.isHidden = true
+        view.addSubview(loadingImageView)
+    }
+    
+    private func setupGestures() {
+        let leftSwipeGesture = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
+        leftSwipeGesture.direction = .left
+        view.addGestureRecognizer(leftSwipeGesture)
         
-        imageView2 = UIImageView(frame: CGRect(x: view.bounds.width, y: 0, width: view.bounds.width, height: view.bounds.height))
-        imageView2.contentMode = .scaleAspectFit
-        imageView2.clipsToBounds = true
-        scrollView.addSubview(imageView2)
+        let rightSwipeGesture = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
+        rightSwipeGesture.direction = .right
+        view.addGestureRecognizer(rightSwipeGesture)
     }
     
     private func loadImages() {
-        imageView1.sd_setImage(with: URL(string: selectedOriginalImage.largeImageURL), placeholderImage: UIImage(named: "placeholder"))
-        imageView2.sd_setImage(with: URL(string: selectedGraffitiImage.largeImageURL), placeholderImage: UIImage(named: "placeholder"))
+        loadingImageView.isHidden = false
         
-        title = "Original Image"
+        imageView.sd_setImage(with: URL(string: selectedImage[0].largeImageURL), placeholderImage: UIImage(named: "placeholder")) { [weak self] image, error, cacheType, url in
+            self?.loadingImageView.isHidden = true 
+            if let error = error {
+                print("Ошибка загрузки оригинального изображения: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    @objc private func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
+        switch gesture.direction {
+        case .left:
+            if currentIndex == 0 {
+                currentIndex = 1
+                title = "Graffiti Image"
+                loadingImageView.isHidden = false
+                imageView.fadeTransition(0.5)
+                imageView.sd_setImage(with: URL(string: selectedImage[1].largeImageURL), placeholderImage: UIImage(named: "placeholder")) { [weak self] image, error, cacheType, url in
+                    self?.loadingImageView.isHidden = true
+                    if let error = error {
+                        print("Ошибка загрузки граффити изображения: \(error.localizedDescription)")
+                    }
+                }
+            }
+        case .right:
+            if currentIndex == 1 {
+                currentIndex = 0
+                title = "Original Image"
+                loadingImageView.isHidden = false
+                imageView.fadeTransition(0.5)
+                imageView.sd_setImage(with: URL(string: selectedImage[0].largeImageURL), placeholderImage: UIImage(named: "placeholder")) { [weak self] image, error, cacheType, url in
+                    self?.loadingImageView.isHidden = true
+                    if let error = error {
+                        print("Ошибка загрузки оригинального изображения: \(error.localizedDescription)")
+                    }
+                }
+            }
+        default:
+            break
+        }
     }
 }
 
-extension ImageViewerVC: UIScrollViewDelegate {
-    func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        let pageWidth = scrollView.bounds.width
-        let page = Int(round(scrollView.contentOffset.x / pageWidth))
-        title = page == 0 ? "Original Image" : "Graffiti Image"
+extension UIImageView {
+    func fadeTransition(_ duration: CFTimeInterval) {
+        let animation = CATransition()
+        animation.timingFunction = CAMediaTimingFunction(name: CAMediaTimingFunctionName.easeInEaseOut)
+        animation.type = CATransitionType.fade
+        animation.duration = duration
+        layer.add(animation, forKey: CATransitionType.fade.rawValue)
     }
-}
-
-struct SelectedImage {
-    var imageUrl: String
 }

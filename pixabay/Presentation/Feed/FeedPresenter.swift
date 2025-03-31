@@ -14,14 +14,14 @@ protocol FeedPresenterProtocol {
 
 class FeedPresenter: FeedPresenterProtocol {
     weak var view: FeedVCProtocol?
-    private let pixabayService: ApiServiceProtocol
+    private let apiService: ApiServiceProtocol
     private var images = [[PixabayImage]]()
     private var currentPage = 1
     private var hasMoreImages = [true, true]
     private let pageSize = 10
 
     init(pixabayService: ApiServiceProtocol) {
-        self.pixabayService = pixabayService
+        self.apiService = pixabayService
     }
 
     func searchButtonTapped(query: String) {
@@ -39,7 +39,7 @@ class FeedPresenter: FeedPresenterProtocol {
     func loadMoreImages(query: String, page: Int, type: Int) {
         guard hasMoreImages[type] else { return }
         let finalQuery = type == 1 ? query + " graffiti" : query
-        pixabayService.searchImages(query: finalQuery, page: page, perPage: pageSize) { [weak self] result in
+        apiService.searchImages(query: finalQuery, page: page, perPage: pageSize) { [weak self] result in
             guard let self = self else { return }
             switch result {
             case .success(let images):

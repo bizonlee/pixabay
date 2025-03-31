@@ -153,6 +153,19 @@ class FeedVC: UIViewController, FeedVCProtocol {
 }
 
 extension FeedVC: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        
+        guard indexPath.row < images[0].count, indexPath.row < images[1].count else {
+            print("Индекс вне диапазона")
+            return
+        }
+        
+        let selectedImages = [images[0][indexPath.row], images[1][indexPath.row]]
+        
+        let imageViewerVC = ImageViewerVC(selectedImage: selectedImages)
+        navigationController?.pushViewController(imageViewerVC, animated: true)
+    }
 }
 
 extension FeedVC: UITableViewDataSource {
