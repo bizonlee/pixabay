@@ -14,7 +14,7 @@ class ImageViewerVC: UIViewController {
     private var currentIndex = 0
     private var loadingImageView: UIImageView!
     
-    init(electedImage: [PixabayImage]) {
+    init(selectedImage: [PixabayImage]) {
         self.selectedImage = selectedImage
         super.init(nibName: nil, bundle: nil)
     }
