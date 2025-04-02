@@ -168,6 +168,7 @@ class FeedVC: UIViewController, FeedVCProtocol {
     
     @objc
     private func searchButtonTapped() {
+        searchTextField.resignFirstResponder()
         guard let query = searchTextField.text, !query.isEmpty else {
             showNoResultsMessage()
             return
