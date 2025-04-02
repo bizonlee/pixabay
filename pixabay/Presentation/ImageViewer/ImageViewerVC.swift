@@ -26,7 +26,7 @@ class ImageViewerVC: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .white
+        view.backgroundColor = UIColor(white: 0.1, alpha: 1.0)
         setupImageView()
         setupLoadingImageView()
         setupGestures()

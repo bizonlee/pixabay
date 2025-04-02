@@ -35,7 +35,7 @@ class FeedVC: UIViewController, FeedVCProtocol {
         textField.textColor = .white
 
         let placeholderColor = UIColor(white: 0.5, alpha: 1.0)
-        textField.attributedPlaceholder = NSAttributedString(string: "Search...",
+        textField.attributedPlaceholder = NSAttributedString(string: "search".localized + "...",
                                                              attributes: [NSAttributedString.Key.foregroundColor: placeholderColor])
 
         textField.layer.cornerRadius = 8.0
@@ -61,7 +61,7 @@ class FeedVC: UIViewController, FeedVCProtocol {
     
     private lazy var searchButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Search", for: .normal)
+        button.setTitle("search".localized, for: .normal)
         button.setTitleColor(.white, for: .normal)
         button.backgroundColor = UIColor(red: 0.2, green: 0.4, blue: 1.0, alpha: 1.0)
         button.layer.cornerRadius = 8.0
