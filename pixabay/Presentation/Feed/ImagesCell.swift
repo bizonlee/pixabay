@@ -33,6 +33,8 @@ class ImagesCell: UITableViewCell {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
         imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.layer.cornerRadius = 8.0
+        imageView.layer.masksToBounds = true
         return imageView
     }()
     
@@ -48,6 +50,7 @@ class ImagesCell: UITableViewCell {
         label.textAlignment = .center
         label.numberOfLines = 0
         label.textColor = .red
+        label.textColor = .white
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -56,7 +59,7 @@ class ImagesCell: UITableViewCell {
         let label = UILabel()
         label.textAlignment = .center
         label.numberOfLines = 0
-        label.textColor = .red
+        label.textColor = .white
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -76,6 +79,9 @@ class ImagesCell: UITableViewCell {
     
     
     private func setupViews() {
+        
+        contentView.backgroundColor = UIColor(white: 0.1, alpha: 1.0)
+        
         imagesStackView.addArrangedSubview(previewImageView)
         imagesStackView.addArrangedSubview(previewImageViewSecond)
         

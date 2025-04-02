@@ -5,8 +5,8 @@
 //  Created by Zhdanov Konstantin on 28.03.2025.
 //
 
-import UIKit
 import SDWebImage
+import UIKit
 
 protocol FeedVCProtocol: AnyObject {
     func updateImages(_ images: [[PixabayImage]])
@@ -23,32 +23,72 @@ class FeedVC: UIViewController, FeedVCProtocol {
     private var isPullToRefresh = false
     private var hasMoreImages = [true, true]
     private var query = ""
-    
+
     private lazy var searchTextField: UITextField = {
         let textField = UITextField()
         textField.placeholder = "Search..."
         textField.translatesAutoresizingMaskIntoConstraints = false
+
+        textField.backgroundColor = UIColor(white: 0.1, alpha: 1.0)
+        textField.textColor = .white
+
+        let placeholderColor = UIColor(white: 0.5, alpha: 1.0)
+        textField.attributedPlaceholder = NSAttributedString(string: "Search...",
+                                                             attributes: [NSAttributedString.Key.foregroundColor: placeholderColor])
+
+        textField.layer.cornerRadius = 8.0
+        textField.layer.masksToBounds = true
+
+        textField.layer.borderWidth = 1.0
+        textField.layer.borderColor = UIColor(white: 0.3, alpha: 1.0).cgColor
+
+        let searchIcon = UIImageView(image: UIImage(systemName: "magnifyingglass"))
+        searchIcon.tintColor = placeholderColor
+        searchIcon.contentMode = .scaleAspectFit
+
+        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 30, height: 20))
+        searchIcon.frame = CGRect(x: 8, y: 0, width: 20, height: 20)
+        paddingView.addSubview(searchIcon)
+
+        textField.leftView = paddingView
+        textField.leftViewMode = .always
+        textField.heightAnchor.constraint(equalToConstant: 30).isActive = true
+
         return textField
     }()
-    
+
     private lazy var searchButton: UIButton = {
-        let button = UIButton()
+        let button = UIButton(type: .system)
         button.setTitle("Search", for: .normal)
-        button.setTitleColor(.blue, for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.backgroundColor = UIColor(red: 0.2, green: 0.4, blue: 1.0, alpha: 1.0)
+        button.layer.cornerRadius = 8.0
+        button.layer.masksToBounds = true
         button.translatesAutoresizingMaskIntoConstraints = false
         button.addTarget(self, action: #selector(searchButtonTapped), for: .touchUpInside)
         return button
     }()
-    
+
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(ImagesCell.self, forCellReuseIdentifier: "ImagesCell")
+        tableView.backgroundColor = .black
         return tableView
     }()
-    
+
+    private lazy var noResultsLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Нет результатов"
+        label.textColor = .white
+        label.textAlignment = .center
+        label.font = UIFont.systemFont(ofSize: 16)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
     private let refreshControl = UIRefreshControl()
     private let activityIndicator = UIActivityIndicatorView(style: .large)
 
@@ -66,26 +106,34 @@ class FeedVC: UIViewController, FeedVCProtocol {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Pixabay App"
-        view.backgroundColor = .white
+        view.backgroundColor = .black
         presenter.view = self
         setupViews()
         setupConstraints()
     }
-    
+
     private func setupConstraints() {
         NSLayoutConstraint.activate([
             searchTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+            searchTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             searchTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            searchTextField.trailingAnchor.constraint(equalTo: searchButton.leadingAnchor, constant: -10),
-            
-            searchButton.topAnchor.constraint(equalTo: searchTextField.topAnchor, constant: 10),
+            searchTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -100),
+
+            searchButton.topAnchor.constraint(equalTo: searchTextField.topAnchor),
             searchButton.leadingAnchor.constraint(equalTo: searchTextField.trailingAnchor, constant: 10),
             searchButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            
+            searchButton.bottomAnchor.constraint(equalTo: searchTextField.bottomAnchor),
+
             tableView.topAnchor.constraint(equalTo: searchButton.bottomAnchor, constant: 20),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            noResultsLabel.topAnchor.constraint(equalTo: tableView.topAnchor),
+            noResultsLabel.leadingAnchor.constraint(equalTo: tableView.leadingAnchor),
+            noResultsLabel.trailingAnchor.constraint(equalTo: tableView.trailingAnchor),
+            noResultsLabel.bottomAnchor.constraint(equalTo: tableView.bottomAnchor),
+            noResultsLabel.centerXAnchor.constraint(equalTo: tableView.centerXAnchor),
+            noResultsLabel.centerYAnchor.constraint(equalTo: tableView.centerYAnchor),
         ])
     }
 
@@ -109,7 +157,8 @@ class FeedVC: UIViewController, FeedVCProtocol {
         view.isUserInteractionEnabled = true
     }
 
-    @objc private func searchButtonTapped() {
+    @objc
+    private func searchButtonTapped() {
         guard let query = searchTextField.text, !query.isEmpty else {
             print("Введите запрос для поиска")
             return
@@ -122,7 +171,8 @@ class FeedVC: UIViewController, FeedVCProtocol {
         showLoadingIndicator()
     }
 
-    @objc private func refreshFiles(_ sender: Any) {
+    @objc
+    private func refreshFiles(_ sender: Any) {
         isPullToRefresh = true
         currentPage = 1
         hasMoreImages = [true, true]
@@ -155,14 +205,14 @@ class FeedVC: UIViewController, FeedVCProtocol {
 extension FeedVC: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        
+
         guard indexPath.row < images[0].count, indexPath.row < images[1].count else {
             print("Индекс вне диапазона")
             return
         }
-        
+
         let selectedImages = [images[0][indexPath.row], images[1][indexPath.row]]
-        
+
         let imageViewerVC = ImageViewerVC(selectedImage: selectedImages)
         navigationController?.pushViewController(imageViewerVC, animated: true)
     }
@@ -190,7 +240,8 @@ extension FeedVC: UITableViewDataSource {
 
         if indexPath.row < images[1].count {
             let graffitiImage = images[1][indexPath.row]
-            cell.previewImageViewSecond.sd_setImage(with: URL(string: graffitiImage.previewURL), placeholderImage: UIImage(named: "placeholder"))
+            cell.previewImageViewSecond.sd_setImage(with: URL(string: graffitiImage.previewURL),
+                                                    placeholderImage: UIImage(named: "placeholder"))
             cell.tagsImageLabelSecond.text = getTags(tags: graffitiImage.tags)
         } else {
             cell.previewImageViewSecond.image = nil
