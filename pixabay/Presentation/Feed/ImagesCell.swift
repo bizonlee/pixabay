@@ -5,10 +5,10 @@
 //  Created by Zhdanov Konstantin on 25.03.2025.
 //
 
+import SDWebImage
 import UIKit
 
 class ImagesCell: UITableViewCell {
-        
     lazy var imagesStackView: UIStackView = {
         let stackView = UIStackView()
         stackView.axis = .horizontal
@@ -31,17 +31,19 @@ class ImagesCell: UITableViewCell {
     
     lazy var previewImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFit
+        imageView.contentMode = .scaleAspectFill
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.layer.cornerRadius = 8.0
-        imageView.layer.masksToBounds = true
+        imageView.clipsToBounds = true
         return imageView
     }()
     
     lazy var previewImageViewSecond: UIImageView = {
         let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFit
+        imageView.contentMode = .scaleAspectFill
         imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.layer.cornerRadius = 8.0
+        imageView.clipsToBounds = true
         return imageView
     }()
     
@@ -49,7 +51,6 @@ class ImagesCell: UITableViewCell {
         let label = UILabel()
         label.textAlignment = .center
         label.numberOfLines = 0
-        label.textColor = .red
         label.textColor = .white
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -64,7 +65,6 @@ class ImagesCell: UITableViewCell {
         return label
     }()
     
-    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupViews()
@@ -76,7 +76,6 @@ class ImagesCell: UITableViewCell {
         setupViews()
         setupConstraints()
     }
-    
     
     private func setupViews() {
         

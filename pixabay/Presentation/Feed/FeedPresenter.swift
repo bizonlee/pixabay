@@ -58,4 +58,12 @@ class FeedPresenter: FeedPresenterProtocol {
             }
         }
     }
+    
+    private func checkAndDisplayNoResults() {
+        if images[0].isEmpty && images[1].isEmpty {
+            view?.showNoResultsMessage()
+        } else {
+            view?.hideNoResultsMessage()
+        }
+    }
 }

@@ -15,15 +15,8 @@ struct PixabayResponse: Decodable {
 
 struct PixabayImage: Decodable {
     let id: Int
-//    let pageURL: String
-//    let type: String
     let tags: String
     let previewURL: String
-//    let previewWidth: Int
-//    let previewHeight: Int
-//    let webformatURL: String
-//    let webformatWidth: Int
-//    let webformatHeight: Int
     let largeImageURL: String
 
 }

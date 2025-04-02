@@ -69,8 +69,8 @@ class ImageViewerVC: UIViewController {
     private func loadImages() {
         loadingImageView.isHidden = false
         
-        imageView.sd_setImage(with: URL(string: selectedImage[0].largeImageURL), placeholderImage: UIImage(named: "placeholder")) { [weak self] image, error, cacheType, url in
-            self?.loadingImageView.isHidden = true 
+        imageView.sd_setImage(with: URL(string: selectedImage[0].largeImageURL), placeholderImage: UIImage(named: "imgPlaceholder")) { [weak self] image, error, cacheType, url in
+            self?.loadingImageView.isHidden = true
             if let error = error {
                 print("Ошибка загрузки оригинального изображения: \(error.localizedDescription)")
             }
@@ -85,7 +85,7 @@ class ImageViewerVC: UIViewController {
                 title = "Graffiti Image"
                 loadingImageView.isHidden = false
                 imageView.fadeTransition(0.5)
-                imageView.sd_setImage(with: URL(string: selectedImage[1].largeImageURL), placeholderImage: UIImage(named: "placeholder")) { [weak self] image, error, cacheType, url in
+                imageView.sd_setImage(with: URL(string: selectedImage[1].largeImageURL), placeholderImage: UIImage(named: "imgPlaceholder")) { [weak self] image, error, cacheType, url in
                     self?.loadingImageView.isHidden = true
                     if let error = error {
                         print("Ошибка загрузки граффити изображения: \(error.localizedDescription)")
@@ -98,7 +98,7 @@ class ImageViewerVC: UIViewController {
                 title = "Original Image"
                 loadingImageView.isHidden = false
                 imageView.fadeTransition(0.5)
-                imageView.sd_setImage(with: URL(string: selectedImage[0].largeImageURL), placeholderImage: UIImage(named: "placeholder")) { [weak self] image, error, cacheType, url in
+                imageView.sd_setImage(with: URL(string: selectedImage[0].largeImageURL), placeholderImage: UIImage(named: "imgPlaceholder")) { [weak self] image, error, cacheType, url in
                     self?.loadingImageView.isHidden = true
                     if let error = error {
                         print("Ошибка загрузки оригинального изображения: \(error.localizedDescription)")

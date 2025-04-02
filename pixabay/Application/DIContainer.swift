@@ -8,21 +8,19 @@
 import Foundation
 
 enum DIContainer {
-    static let sharedApiService = ApiService()
-//
-//    static func createOnboardingService() -> OnboardingServiceProtocol {
-//        OnboardingService()
-//    }
-//
-//    static func createFileService() -> FileServiceProtocol {
-//        return FileService(apiService: sharedApiService)
- //   }
+    static let sharedApiService: ApiServiceProtocol = ApiService()
     
     static func createApiService() -> ApiServiceProtocol {
         sharedApiService
     }
     
-//    static func createProfileService() -> ProfileService {
-//        return ProfileService(apiService: sharedApiService)
-//    }
+    static func createFeedPresenter() -> FeedPresenter {
+        FeedPresenter(pixabayService: createApiService())
+    }
+    
+    static func createFeedVC() -> FeedVC {
+        let feedVC = FeedVC(pixabayService: createApiService())
+        feedVC.presenter = createFeedPresenter()
+        return feedVC
+    }
 }
